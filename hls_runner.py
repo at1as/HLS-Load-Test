@@ -7,12 +7,27 @@ from   requests.packages.urllib3.exceptions import InsecurePlatformWarning
 import time
 
 
+def average_list(list_items, shift=1):
+  try:
+    return float(sum(list_items))/float(len(list_items))/float(shift)
+  except ZeroDivisionError as e:
+    return None
+
+def min_max_list(list_items, shift=1):
+  try:
+    return min(list_items)/float(shift), max(list_items)/float(shift)
+  except ValueError as e:
+    return None, None
+
+
 def construct_segment_url(playlist_url, segment):
   # Prepend URL segment with url origin if it is a relative path
-  if segment.startswith("http"):
+  if segment.startswith('http'):
     return segment
   else:
-   return playlist_url.rsplit('/', 1)[0] + '/' + segment
+    if segment.startswith('./') and len(segment) > 2:
+      segment = segment[2:]
+    return playlist_url.rsplit('/', 1)[0] + '/' + segment
 
 
 def get_segment(url, status, results, duration, timeout, lock):
@@ -75,19 +90,33 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, timeo
       return
 
     segment_count = 0
+    loop_iterator, loop_limit = 1, 1000 
+    segments = {}
 
     # For live content
     if live.lower() == 'true':
-      pass
-      """ TODO - request new playlist in outer loop
-      for file in playlist.files:
-        segment_count += 1
-        if segment_count > loop: return
+      while segment_count < loop and loop_iterator < loop_limit:
         
-        time.sleep(timeout['sleep'])
-        segment_url = construct_segment_url(r.url, file)
-        get_segment(segment_url, status, results, duration, timeout, lock)
-      """
+        # In case no files are found, break loop after 1000 iterations
+        loop_iterator += 1
+        if loop_iterator >= loop_limit: return
+
+        # TODO: catch exceptions / empty
+        r = requests.get(m3u8_url, verify=False, timeout=(timeout['connect'], timeout['read']))
+        playlist = m3u8.loads(r.text) 
+        
+        for file in playlist.files:
+          if segment_count > loop: return
+          
+          segment_url = construct_segment_url(r.url, file)
+          
+          # If segement has not yet been requested (some playlists will overlap TS files if files if requested too fast)
+          if not segments.has_key(segment_url):
+            segment_count += 1
+            segments[segment_url] = True
+            time.sleep(timeout['sleep'])
+            get_segment(segment_url, status, results, duration, timeout, lock)
+
     else: # VOD
       for loop_number in range(0, int(loop)):
     
@@ -107,6 +136,9 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, timeo
             r2 = requests.get(url=sub_playlist_url, verify=False, timeout=(timeout['connect'], timeout['read']))
             
             for file in m3u8.loads(r2.text).files:
+
+              segment_count += 1 ###DEBUG
+              if segment_count > 6: return ###DEBUG
 
               time.sleep(timeout['sleep'])
               segment_url = construct_segment_url(sub_playlist.uri, file)
@@ -146,5 +178,9 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1):
   for subprocess in subprocesses:
     subprocess.join()
 
-  return results, status, sum(durations), success
+  response_times = {'Average': average_list(durations, 1000000),
+                    'Min': min_max_list(durations, 1000000)[0],
+                    'Max': min_max_list(durations, 1000000)[1]}
+
+  return results, status, response_times, success
 
