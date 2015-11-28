@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>HLS Load Test</title>
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="container">
+
+      <h4> Parameters </h4>
+      <hr>
+
+      <!-- PARAMETERS -->
+      <div id="parameters">
+        <form method="post" action="{{ url_for('start') }}" class="form-horizontal" role="form">
+
+          <div class="form-group">
+            <div class="col-lg12 col-md-12 col-sm-12 col-xs-12">
+              <label for="url" class="form-label">
+                URL <span style="color:red">*</span>
+              </label>
+                <input id="url" name="url" type="url" placeholder="Playlist .m3u8 URL" class="form-control" value="{{ playlist_url }}" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+              <label for="request_sleep" class="form-label ">
+                Sleep
+              </label>
+              <input id="request_sleep" name="request_sleep" type="text" placeholder="Sleep Between Segments" class="form-control" value="{{ sleep }}">
+            </div>
+
+            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+              <label for="concurrency" class="form-label">
+                Concurrency
+              </label>
+              <input id="concurrency" name="concurrency" type="text" placeholder="Parallel requests" class="form-control" value="{{ concurrency }}">
+            </div>
+
+            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+              <label for="live" class="form-label">
+                Live <span style="color:red">*</span>
+              </label>
+              <select id="live" name="live" type="text" class="form-control" placeholder="Continuous HLS segment stream" onchange="set_live(this)" value="{{ live }}">
+                <option>True</option>
+                <option>False</option>
+              </select>
+            </div>
+
+            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+              <label for="loop" id="loop-label" class="form-label">
+                Loops
+              </label>
+              <input id="loop" name="loop" type="text" placeholder="Times to loop playlist" class="form-control" value="{{ loop }}" readonly>
+            </div>
+          
+          </div>
+
+          <div class="form-group text-center">
+            <button class="btn btn-primary" type="submit" style="width:200px">
+              Start
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      {% if test_running %}
+      <!-- STATISTICS -->
+      <h4> Statistics </h4>
+      <hr>
+      <div id="statistics">
+        <h5> <u>HTTP Return Codes</u> </h5>
+        {% for key in status_codes.keys() %}
+          <b>{{ key }}</b> : {{ status_codes[key] }}<br/>
+        {% endfor %}
+
+        <h5> <u>Response Types</u> </h5>
+        {% for key in results.keys() %}
+          <b>{{ key }}</b> : {{ results[key] }}<br/>
+        {% endfor %}
+
+        <h5> <u>Response Times</u> </h5>
+        <b>Average Response Time</b> : {{ duration }}<br/>
+
+        <h5> <u>Playlist Acquired Successfully?</u> </h5>
+        {% for key in success.keys() %}
+          <b>{{ key }}</b> : {{ success[key] }}<br/>
+        {% endfor %}
+      </div>
+      
+      <!-- VIEWER -->
+      <h4> Viewer </h4>
+      <hr>
+      <div id="viewer" style="text-align:center">
+        <video width="352" height="198" controls>
+        <source src="{{playlist_url}}" type="application/x-mpegURL">
+        </video>
+      </div>
+      {% endif %}
+    
+    </div>
+    <script type="text/javascript">
+
+    function set_live(setting){
+      if (setting.value === "True"){
+        document.getElementById('loop').readOnly = true;  
+        document.getElementById('loop').required = false;  
+        document.getElementById('loop-label').innerHTML = 'Loop'; 
+      } else {
+        document.getElementById('loop').readOnly = false;
+        document.getElementById('loop').required = true;
+        document.getElementById('loop-label').innerHTML = 'Loop <span style="color:red">*</span>';
+      }
+    }
+
+  </script>
+  </body>
+</html>
