@@ -40,23 +40,26 @@ def construct_url(playlist_url, segment):
 
 def get_playlist_details(m3u8_url, timeout, success):
   # Get playlist and extract m3u8 data
-  r = requests.get(m3u8_url, verify=False, allow_redirects=True, timeout=(timeout['connect'], timeout['read']))
+  try:
+    r = requests.get(m3u8_url, verify=False, allow_redirects=True, timeout=(timeout['connect'], timeout['read']))
 
-  if not r.status_code in [200, 201, 302, 307]:
-    try: success[False] += 1
-    except: success[False] = 1
-    return
-  else:
-    try:
-      playlist = m3u8.loads(r.text)
-      try: success[True] += 1
-      except: success[True] = 1
-      return playlist
-    except:
+    if not r.status_code in [200, 201, 302, 307]:
       try: success[False] += 1
       except: success[False] = 1
       return
-
+    else:
+      try:
+        playlist = m3u8.loads(r.text)
+        try: success[True] += 1
+        except: success[True] = 1
+        return playlist
+      except:
+        try: success[False] += 1
+        except: success[False] = 1
+        return
+  except:
+    try: success[False] += 1
+    except: success[False] = 1
 
 def get_segment(url, status, results, duration, timeout, lock):
   # Get HLS Segment and tally status codes and errors
@@ -117,6 +120,8 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
 
   if playlist:
     loop_iterator, loop_limit = 1, 1000 
+    seconds_since_new_file = 0
+    no_file_timeout = 120
     segments = {}
     segments['count'] = 0
     segments['played'] = {}
@@ -128,18 +133,26 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
       if len(playlist.playlists) > 0:
         base_url = construct_url(m3u8_url, playlist.playlists[0].uri)
       
-      while segments['count'] < int(loop) and loop_iterator < loop_limit:
+      while segments['count'] < int(loop):
         
         # In case no files are found, break loop after 1000 iterations
         loop_iterator += 1
-        if loop_iterator >= loop_limit: return
+        if loop_iterator >= loop_limit: 
+          return
+
+        # If playlists are continually requested with the same list of segments, timeout after no_file_timeout
+        if seconds_since_new_file > no_file_timeout:
+          return
 
         playlist = get_playlist_details(base_url, timeout, success)
         if not playlist:
           continue
         
         for file in playlist.files:
-          if segments['count'] > int(loop):
+
+          segments_since_new_file = 0
+          
+          if segments['count'] >= int(loop):
             return
           
           segment_url = construct_url(base_url, file)
@@ -153,6 +166,10 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
             segments['played'][segment_url] = True
             time.sleep(timeout['sleep'])
             get_segment(segment_url, status, results, duration, timeout, lock)
+        
+        # Sleep before getting next playlists (in case there are no new segments, this loops too quickly)
+        time.sleep(timeout['sleep'])
+        seconds_since_new_file += int(timeout['sleep'])
 
     else: # VOD
 
@@ -188,7 +205,7 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, 
     requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
   except:
     pass
-
+  
   # Configurables
   subprocesses = []
   process_id = 0
