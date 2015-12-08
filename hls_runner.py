@@ -1,3 +1,4 @@
+import json
 import m3u8
 from   multiprocessing import Process, Manager, Lock
 import pdb
@@ -148,7 +149,7 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
         if not playlist:
           continue
         
-        for file in playlist.files:
+        for idx, file in enumerate(playlist.files):
 
           segments_since_new_file = 0
           
@@ -177,7 +178,7 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
     
         # If playlist contains all TS files directly
         if len(playlist.files) > 0:
-          for file in playlist.files:
+          for idx, file in enumerate(playlist.files):
 
             time.sleep(timeout['sleep'])
             segment_url = construct_url(base_url, file)
@@ -189,7 +190,7 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
             sub_playlist_url = construct_url(base_url, sub_playlist.uri)
             nested_playlist = requests.get(url=sub_playlist_url, verify=False, allow_redirects=True, timeout=(timeout['connect'], timeout['read']))
             
-            for file in m3u8.loads(nested_playlist.text).files:
+            for idx, file in enumerate(m3u8.loads(nested_playlist.text).files):
               time.sleep(timeout['sleep'])
               segment_url = construct_url(nested_playlist.url, file)
               get_segment(segment_url, status, results, duration, timeout, lock)
@@ -233,14 +234,30 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, 
 
   # Wait for all processes to complete
   for subprocess in subprocesses:
-    subprocess.join()
-
-  response_times = {
-                      'Average': average_list(durations, 1000000),
-                      'Min': min_max_list(durations, 1000000)[0],
-                      'Max': min_max_list(durations, 1000000)[1]
-                    }
+    #subprocess.join()
+    while True:
+      response_times = {
+                          'Average': average_list(durations, 1000000),
+                          'Min': min_max_list(durations, 1000000)[0],
+                          'Max': min_max_list(durations, 1000000)[1]
+                        }
+      print "DEBUG ::: YIELDING"
+      print "R", results._getvalue()
+      print "S", status._getvalue()
+      print "RT", response_times
+      print "S", success._getvalue()
+      yield results._getvalue(), status._getvalue(), response_times, success._getvalue()
+      time.sleep(1)
+      if not subprocess.is_alive():
+        break
+  
+  print "DEBUG ::: DONE"
+  #response_times = {
+  #                    'Average': average_list(durations, 1000000),
+  #                    'Min': min_max_list(durations, 1000000)[0],
+  #                    'Max': min_max_list(durations, 1000000)[1]
+  #                  }
 
   # TODO: return playlist details # is_i_frames_only, is_variant, is_independent_segments, iframe_playlists, is_endlist, media_sequence, targetduration
-  return results, status, response_times, success
+  #### return results, status, response_times, success
 

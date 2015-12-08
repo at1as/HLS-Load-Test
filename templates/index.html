@@ -101,7 +101,7 @@
             <button class="btn btn-primary" onclick="clear_form('params_form'); return false;" style="width:200px; margin-right:30px; margin-left:30px">
               Clear
             </button>
-            <button class="btn btn-primary" type="submit" style="width:200px; margin-right:30px; margin-left:30px">
+            <button class="btn btn-primary" type="button" onclick="send_form(); return false"; style="width:200px; margin-right:30px; margin-left:30px">
               Start
             </button>
           </div>
@@ -109,42 +109,48 @@
         </form>
       </div>
 
-      {% if test_stats %}
-      <!-- STATISTICS -->
-      <h4> Statistics </h4>
-      <hr>
-      <div id="statistics">
-        <h5> <u>HTTP Return Codes</u> </h5>
-        {% for key in status_codes.keys() %}
-          <span style="margin-left:10px"><b>{{ key }}</b> : {{ status_codes[key] }}</span><br/>
-        {% endfor %}
+      <div {% if test_stats != 'True' %}style="display:none"{% endif %}>
+        <!-- STATISTICS -->
+        <h4> Statistics </h4>
+        <hr>
+        <div id="statistics" style="margin-left:20px">
+          
+          <div id="return_code_container">
+            <h5> <u>HTTP Return Codes</u> </h5>
+          </div>
 
-        <h5> <u>Response Types</u> </h5>
-        {% for key in results.keys() %}
-          <span style="margin-left:10px"><b>{{ key }}</b> : {{ results[key] }}</span><br/>
-        {% endfor %}
+          <div id="response_type_container">
+            <h5> <u>Response Types</u> </h5>
+          </div>
 
-        <h5> <u>Response Times</u> </h5>
-        {% for key in response_times.keys() %}
-          <span style="margin-left:10px"><b>{{key}}</b> : {{ response_times[key] }} seconds</span><br/>
-        {% endfor %}
+          <div id="response_times_container">
+            <h5> <u>Response Times</u> </h5>
+            {% if response_times %}
+              {% for key in response_times.keys() %}
+                <span style="margin-left:10px"><b>{{ key }}</b> : {{ response_times[key] }} seconds</span><br/>
+              {% endfor %}
+            {% endif %}
+          </div>
 
-        <h5> <u>Playlist Acquired Successfully?</u> </h5>
-        {% for key in success.keys() %}
-          <span style="margin-left:10px"><b>{{ key }}</b> : {{ success[key] }}</span><br/>
-        {% endfor %}
+          <div id="status_container">
+            <h5> <u>Playlist Acquired Successfully?</u> </h5>
+          </div>
+        </div>
+
+        <div style="text-align:center; width:100%">
+          <b>Tests Saved to :</b> {{ test_location }}
+        </div>
+
+        <!-- VIEWER -->
+        <h4> Viewer </h4>
+        <hr>
+        <div id="viewer" style="text-align:center">
+          <video width="352" height="198" controls>
+          <source src="{{ playlist_url }}" type="application/x-mpegURL">
+          </video>
+        </div>
+
       </div>
-      
-      <!-- VIEWER -->
-      <h4> Viewer </h4>
-      <hr>
-      <div id="viewer" style="text-align:center">
-        <video width="352" height="198" controls>
-        <source src="{{playlist_url}}" type="application/x-mpegURL">
-        </video>
-      </div>
-      {% endif %}
-    
     </div>
     <script type="text/javascript">
 
@@ -162,6 +168,76 @@
 
       function clear_form(form_name){
         document.getElementById(form_name).reset();
+      }
+
+      function assemble_payload(){
+        var payload = {}
+        /* Primary Parameters */
+        payload.url = document.getElementById('url').value;
+        payload.request_sleep = document.getElementById('request_sleep').value;
+        payload.concurrency = document.getElementById('concurrency').value;
+        payload.live = document.getElementById('live').value;
+        payload.loop = document.getElementById('loop').value;
+
+        /* Authentication Paramaters */
+        payload.auth_url = document.getElementById('auth_url').value;
+        payload.auth_username = document.getElementById('auth_username').value;
+        payload.auth_password = document.getElementById('auth_password').value;
+        payload.auth_type = document.getElementById('auth_type').value;
+
+        return payload;
+      }
+
+      var es = false;
+
+      function send_form(){
+        var url = '/set/';
+        var client  = new XMLHttpRequest();
+        var payload = assemble_payload();
+
+        client.onreadystatechange = function() {
+          if (client.readyState == 4 && client.status == 200) {
+
+            es = new EventSource('/start/');
+            
+            es.onmessage = function(e) {  
+              var response = JSON.parse(e.data);
+              var status_codes = response.status_codes;
+              var results = response.results;
+              var response_times = response.response_times;
+              var success = response.success;
+              console.log('SC ' + status_codes);
+              console.log('RZ ' + JSON.stringify(results));
+              console.log('RT ' + response_times);
+              console.log('S ' + success);
+              console.log('e ' + e.data);
+            } 
+            es.onerror = function(e) {
+              e = e || event, msg = '';
+              switch( e.target.readyState ){
+                case EventSource.CONNECTING: // Stream Closed
+                  es.close();
+                  return;
+                case EventSource.CLOSED:
+                  console.log("Event source closed");
+                  return;
+              }
+            }
+          } else {
+            if(es.readyState !== 2) {
+              try {
+                es.close()
+              } catch(e) {
+                //socket already closed
+              }
+              return;
+            }        
+          }
+        }
+
+        client.open('POST', url, true);
+        client.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        client.send(JSON.stringify(payload));
       }
 
       set_live(document.getElementById('live'));
