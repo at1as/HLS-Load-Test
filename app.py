@@ -57,7 +57,7 @@ def build_request_body(request):
   request_body['sleep'] = set_value(request.json['request_sleep'], 2)
   request_body['concurrency'] = set_value(request.json['concurrency'], 1)
   request_body['live'] = set_value(request.json['live'], False)
-  request_body['loop'] = request.json['loop']
+  request_body['loop'] = set_value(request.json['loop'], 1) ## TODO: change default for Live/VOD
 
   # Timeouts
   read_timeout = set_value(request.json['read_timeout'], 10)
