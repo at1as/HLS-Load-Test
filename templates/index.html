@@ -8,12 +8,12 @@
   <body>
     <div class="container">
 
-      <h4> Parameters </h4>
-      <hr>
-
       <!-- PARAMETERS -->
-      <div id="parameters">
+      <div id="parameters" style="margin-top:20px">
         <form id="params_form" method="post" action="{{ url_for('start') }}" class="form-horizontal well" role="form">
+
+          <h4 style="margin-bottom: -10px; text-align:center;">Stream Parameters</h4>
+          <hr>
 
           <div class="form-group">
             <div class="col-lg12 col-md-12 col-sm-12 col-xs-12">
@@ -57,45 +57,68 @@
             </div>
           </div>
 
+          
+          <!-- Timeouts -->
+          <h4 id="timeout_header" style="margin-bottom: -10px; text-align:center; margin-top:35px" onclick="toggle_timeout_view()">Timeouts</h4>
           <hr>
+          <div id="timeout_fields">
+            <div class="form-group">
+              <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                <label for="read_timeout" class="form-label ">
+                  Read Timeout
+                </label>
+                <input id="read_timeout" name="read_timeout" type="number" placeholder="Read Timeout (seconds)" class="form-control" value="{{ read_timeout }}" type="number" min="1">
+              </div>
+              
+              <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                <label for="connect_timeout" class="form-label ">
+                  Connect Timeout
+                </label>
+                <input id="connect_timeout" name="connect_timeout" type="number" placeholder="Connect Timeout (seconds)" class="form-control" value="{{ connect_timeout }}" type="number" min="1">
+              </div>
+            </div>
+          </div>
 
+          
           <!-- AUTHENTICATION -->
-          <div class="form-group">
-            <div class="col-lg12 col-md-12 col-sm-12 col-xs-12">
-              <label for="url" class="form-label">
-                Authentication URL
-              </label>
-                <input id="auth_url" name="auth_url" type="url" placeholder="URL for authentication" class="form-control" value="{{ auth_url }}">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
-              <label for="request_sleep" class="form-label ">
-                Username
-              </label>
-              <input id="auth_username" name="auth_username" type="text" placeholder="Login Username" class="form-control" value="{{ auth_username }}">
-            </div>
-
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
-              <label for="concurrency" class="form-label">
-                Password
-              </label>
-              <input id="auth_password" name="auth_password" type="text" placeholder="Login Password" class="form-control" value="{{ auth_password }}">
-            </div>
-            
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
-              <label for="concurrency" class="form-label">
-                Request Type
-              </label>
-              <select id="auth_type" name="auth_type" type="text" class="form-control">
-                <option>POST</option>
-                <option>GET</option>
-              </select>
-            </div>
-          </div>
-
+          <h4 id="auth_header" style="margin-bottom: -10px; text-align:center; margin-top:35px" onclick="toggle_auth_view()">Authentication</h4>
           <hr>
+          <div id="auth_fields">
+            <div class="form-group">
+              <div class="col-lg12 col-md-12 col-sm-12 col-xs-12">
+                <label for="url" class="form-label">
+                  Authentication URL
+                </label>
+                  <input id="auth_url" name="auth_url" type="url" placeholder="URL for authentication" class="form-control" value="{{ auth_url }}">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+                <label for="request_sleep" class="form-label ">
+                  Username
+                </label>
+                <input id="auth_username" name="auth_username" type="text" placeholder="Login Username" class="form-control" value="{{ auth_username }}">
+              </div>
+
+              <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+                <label for="concurrency" class="form-label">
+                  Password
+                </label>
+                <input id="auth_password" name="auth_password" type="text" placeholder="Login Password" class="form-control" value="{{ auth_password }}">
+              </div>
+              
+              <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+                <label for="concurrency" class="form-label">
+                  Request Type
+                </label>
+                <select id="auth_type" name="auth_type" type="text" class="form-control">
+                  <option>POST</option>
+                  <option>GET</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div class="form-group text-center">
             <button class="btn btn-primary" onclick="clear_form('params_form'); return false;" style="width:200px; margin-right:30px; margin-left:30px">
@@ -109,22 +132,23 @@
         </form>
       </div>
 
-      <div {% if test_stats != 'True' %}style="display:none"{% endif %}>
+      <div id="results_and_metrics" {% if test_stats != 'True' %}style="display:none"{% endif %}>
         <!-- STATISTICS -->
         <h4> Statistics </h4>
         <hr>
+        <div id="test_complete" style="width:100%; text-align:center; color:green; font-weight:800; font-size:20px"></div>
         <div id="statistics" style="margin-left:20px">
           
+          <h5> <u>HTTP Return Codes</u> </h5>
           <div id="return_code_container">
-            <h5> <u>HTTP Return Codes</u> </h5>
           </div>
 
+          <h5> <u>Response Types</u> </h5>
           <div id="response_type_container">
-            <h5> <u>Response Types</u> </h5>
           </div>
 
+          <h5> <u>Response Times</u> </h5>
           <div id="response_times_container">
-            <h5> <u>Response Times</u> </h5>
             {% if response_times %}
               {% for key in response_times.keys() %}
                 <span style="margin-left:10px"><b>{{ key }}</b> : {{ response_times[key] }} seconds</span><br/>
@@ -132,13 +156,13 @@
             {% endif %}
           </div>
 
-          <div id="status_container">
-            <h5> <u>Playlist Acquired Successfully?</u> </h5>
+          <h5> <u>Playlist Acquired Successfully?</u> </h5>
+          <div id="playlist_status_container">
           </div>
         </div>
 
-        <div style="text-align:center; width:100%">
-          <b>Tests Saved to :</b> {{ test_location }}
+        <div style="text-align:center; width:100%; margin-top:20px">
+          <b>Tests Saved to :</b> <span id="text_location">{{ test_location }}</span>
         </div>
 
         <!-- VIEWER -->
@@ -179,6 +203,10 @@
         payload.live = document.getElementById('live').value;
         payload.loop = document.getElementById('loop').value;
 
+        /* Timeouts */
+        payload.read_timeout = document.getElementById('read_timeout').value;
+        payload.connect_timeout = document.getElementById('connect_timeout').value;
+
         /* Authentication Paramaters */
         payload.auth_url = document.getElementById('auth_url').value;
         payload.auth_username = document.getElementById('auth_username').value;
@@ -199,27 +227,87 @@
           if (client.readyState == 4 && client.status == 200) {
 
             es = new EventSource('/start/');
+            document.getElementById('results_and_metrics').style.display = '';
             
             es.onmessage = function(e) {  
+              // Responses
               var response = JSON.parse(e.data);
               var status_codes = response.status_codes;
               var results = response.results;
               var response_times = response.response_times;
               var success = response.success;
-              console.log('SC ' + status_codes);
-              console.log('RZ ' + JSON.stringify(results));
-              console.log('RT ' + response_times);
-              console.log('S ' + success);
-              console.log('e ' + e.data);
-            } 
+
+              // Data containers
+              var return_code_container = document.getElementById('return_code_container');
+              var response_type_container = document.getElementById('response_type_container');
+              var response_times_container = document.getElementById('response_times_container');
+              var playlist_status_container = document.getElementById('playlist_status_container');
+
+              // Append Status Codes to view
+              while (return_code_container.firstChild) {
+                  return_code_container.removeChild(return_code_container.firstChild);
+              }
+              
+              var status_code_keys = Object.keys(status_codes);
+              for (var i=0; i < status_code_keys.length; i++){
+                var row_data = document.createElement('div');
+                row_data.innerHTML = '<b>' + status_code_keys[i] + ' : </b>' + status_codes[status_code_keys[i]];
+                return_code_container.appendChild(row_data);
+              }
+
+              // Response Types
+              while (response_type_container.firstChild) {
+                  response_type_container.removeChild(response_type_container.firstChild);
+              }
+              
+              var response_type_keys = Object.keys(results);
+              for (var i=0; i < response_type_keys.length; i++){
+                var row_data = document.createElement('div');
+                row_data.style.marginLeft = ':20px';
+                row_data.innerHTML = '<b>' + response_type_keys[i] + ' : </b>' + results[response_type_keys[i]];
+                response_type_container.appendChild(row_data);
+              }
+  
+              // Response Times
+              while (response_times_container.firstChild) {
+                  response_times_container.removeChild(response_times_container.firstChild);
+              }
+              
+              var response_times_keys = Object.keys(response_times);
+              for (var i=0; i < response_times_keys.length; i++){
+                var row_data = document.createElement('div');
+                row_data.innerHTML = '<b>' + response_times_keys[i] + ' : </b>' + response_times[response_times_keys[i]] + ' seconds';
+                response_times_container.appendChild(row_data);
+              }
+
+              // Playlists Acquired
+              while (playlist_status_container.firstChild) {
+                  playlist_status_container.removeChild(playlist_status_container.firstChild);
+              }
+              
+              var playlist_success_keys = Object.keys(success);
+              for (var i=0; i < playlist_success_keys.length; i++){
+                var row_data = document.createElement('div');
+                row_data.innerHTML = '<b>' + playlist_success_keys[i] + ' : </b>' + success[playlist_success_keys[i]];
+                playlist_status_container.appendChild(row_data);
+              }
+
+              // Text File Location
+              document.getElementById('text_location').innerHTML = response.test_location;
+            }
+            
             es.onerror = function(e) {
               e = e || event, msg = '';
               switch( e.target.readyState ){
                 case EventSource.CONNECTING: // Stream Closed
                   es.close();
+                  document.getElementById('test_complete').innerHTML = 'Test Complete';
+                  document.getElementById('test_complete').style.color = 'green';
                   return;
                 case EventSource.CLOSED:
                   console.log("Event source closed");
+                  document.getElementById('test_complete').innerHTML = 'Test Complete';
+                  document.getElementById('test_complete').style.color = 'green';
                   return;
               }
             }
@@ -235,12 +323,46 @@
           }
         }
 
+        document.getElementById('test_complete').innerHTML = 'Test Running';
+        document.getElementById('test_complete').style.color = 'red';
+
         client.open('POST', url, true);
         client.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
         client.send(JSON.stringify(payload));
       }
 
+      
+      function toggle_timeout_view(){
+        // Minimize or Maximize Timeout Fields
+        var timeout_fields = document.getElementById('timeout_fields');
+        var timeout_header = document.getElementById('timeout_header');
+        if (timeout_fields.style.display === 'none') {
+          timeout_fields.style.display = '';
+          timeout_header.innerHTML = '[&mdash;] Timeouts';
+        } else {
+          timeout_fields.style.display = 'none';
+          timeout_header.innerHTML = '[+] Timeouts';
+        }
+      }
+
+      function toggle_auth_view(){
+        // Minimize or Maximize Authentication Fields
+        var auth_fields = document.getElementById('auth_fields');
+        var auth_header = document.getElementById('auth_header');
+
+        if (auth_fields.style.display === 'none') {
+          auth_fields.style.display = '';
+          auth_header.innerHTML = '[&mdash;] Authentication';
+        } else {
+          auth_fields.style.display = 'none';
+          auth_header.innerHTML = '[+] Authentication';
+        }
+      }
+
+      // On Load
       set_live(document.getElementById('live'));
+      toggle_timeout_view();
+      toggle_auth_view();
 
   </script>
   </body>

@@ -2,7 +2,6 @@ import datetime
 from   flask import Flask, request, render_template, Response, stream_with_context
 from   hls_runner import *
 import json
-import pdb
 
 app =  Flask(__name__)
 test_running = False
@@ -13,28 +12,27 @@ request_body = {}
 
 def write_report(filename, results, status_codes, response_times, success):
   # Write results to a timestamped file in the /tmp directory
-  with open(filename, 'w') as f:
+  try:
+    with open(filename, 'w') as f:
     
-    #status_codes = json.loads(status_codes)
-    f.write("Status Codes\n")
-    for key in status_codes.keys():
-      f.write("%s : %s\n" %(key, status_codes[key]))
-    
-    #results = json.loads(results)
-    f.write("\nResponse Types\n")
-    for key in results.keys():
-      f.write("%s : %s\n" %(key, results[key]))
+      f.write("Status Codes\n")
+      for key in status_codes.keys():
+        f.write("%s : %s\n" %(key, status_codes[key]))
+      
+      f.write("\nResponse Types\n")
+      for key in results.keys():
+        f.write("%s : %s\n" %(key, results[key]))
 
-    f.write("\nResponse Times\n")
-    for key in response_times.keys():
-      f.write("%s : %s\n" %(key, response_times[key]))
-    
-    #success = json.loads(success)
-    f.write("\nPlaylist Acquired Successfully?\n")
-    for key in success.keys():
-      f.write("%s : %s\n" %(key, success[key]))
-
-  print "Output written to %s" % filename
+      f.write("\nResponse Times\n")
+      for key in response_times.keys():
+        f.write("%s : %s\n" %(key, response_times[key]))
+      
+      f.write("\nPlaylist Acquired Successfully?\n")
+      for key in success.keys():
+        f.write("%s : %s\n" %(key, success[key]))
+    return True
+  except:
+    return False
 
 
 def authentication_url(auth_url, auth_username, auth_password, auth_type):
@@ -43,17 +41,29 @@ def authentication_url(auth_url, auth_username, auth_password, auth_type):
   else:
     return None
 
+def set_value(value, default):
+  # Return given value, or if not set, return the default
+  if value:
+    return value
+  else:
+    return default
+
 
 def build_request_body(request):
   global request_body
 
   # Stream Parameters
   request_body['url'] = request.json['url']
-  request_body['sleep'] = request.json['request_sleep']
-  request_body['concurrency'] = request.json['concurrency']
-  request_body['live'] = request.json['live']
+  request_body['sleep'] = set_value(request.json['request_sleep'], 2)
+  request_body['concurrency'] = set_value(request.json['concurrency'], 1)
+  request_body['live'] = set_value(request.json['live'], False)
   request_body['loop'] = request.json['loop']
 
+  # Timeouts
+  read_timeout = set_value(request.json['read_timeout'], 10)
+  connect_timeout = set_value(request.json['connect_timeout'], 10)
+  request_body['timeouts'] = {'read': read_timeout, 'connect': connect_timeout}
+  
   # Authentication Parameters
   auth_url = request.json['auth_url']
   auth_username = request.json['auth_username']
@@ -82,14 +92,10 @@ def start():
   def generate():
     global request_body
 
-    #build_request_body(request)
-    
     # Write Results to file
     timestamped_file = '/tmp/hls-' + str(datetime.datetime.now()).replace(' ', '_')
     
-    #print "Fetching Stream: %s (sleep: %s, concurrency: %s, live: %s, loop: %s)" %(url, sleep, concurrency, live, loop)
-    
-    for results, status_codes, response_times, success in get_hls_stream(request_body['url'], request_body['concurrency'], request_body['live'], request_body['loop'], request_body['sleep'], request_body['authentication']):
+    for results, status_codes, response_times, success in get_hls_stream(request_body['url'], request_body['concurrency'], request_body['live'], request_body['loop'], request_body['sleep'], request_body['authentication'], request_body['timeouts']):
       write_report(timestamped_file, results, status_codes, response_times, success)
      
       # EventSource format must be "data: <data>\n\n"

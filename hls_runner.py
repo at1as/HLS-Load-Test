@@ -23,6 +23,13 @@ def min_max_list(list_items, shift=1):
   except ValueError as e:
     return None, None
 
+def calculated_response_times(durations):
+  # Compile response times into Average, Min, and Max durations
+  return {
+            'Average': average_list(durations, 1000000),
+            'Min': min_max_list(durations, 1000000)[0],
+            'Max': min_max_list(durations, 1000000)[1]
+          }
 
 def construct_url(playlist_url, segment):
   # Segments point to absolute URL 
@@ -130,7 +137,7 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
     # For live content
     if live.lower() == 'true':
     
-      # If playlist is nested
+      # If playlist contains nested playlists, use the first
       if len(playlist.playlists) > 0:
         base_url = construct_url(m3u8_url, playlist.playlists[0].uri)
       
@@ -150,16 +157,21 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
           continue
         
         for idx, file in enumerate(playlist.files):
-
-          segments_since_new_file = 0
           
+          # Break when enough segments (user set) have been requested
           if segments['count'] >= int(loop):
             return
+          
+          # Only request segments from [n - 3, n]
+          if idx < (len(playlist.files) - 3):
+            continue
           
           segment_url = construct_url(base_url, file)
 
           # If segement has not yet been requested (some playlists will overlap TS files if files if requested too fast)
           if not segments['played'].has_key(segment_url):
+            seconds_since_new_file = 0
+            
             lock.acquire()
             segments['count'] += 1
             lock.release()
@@ -196,7 +208,7 @@ def get_playlist(m3u8_url, live, loop, results, status, success, duration, playl
               get_segment(segment_url, status, results, duration, timeout, lock)
 
           
-def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, authentication=None):
+def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, authentication=None, timeouts=None):
   # Spawn concurrent subprocesses to get every HLS segment of stream
 
   # Disable all SSL Warnings (version dependent)
@@ -210,7 +222,9 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, 
   # Configurables
   subprocesses = []
   process_id = 0
-  timeout    = {'read': 10, 'connect': 10, 'sleep': float(segment_sleep)}
+  timeout    = {'read': float(timeouts['read']), 
+                'connect': float(timeouts['connect']), 
+                'sleep': float(segment_sleep)}
   manager    = Manager()
   lock       = manager.Lock()
   durations  = manager.list()
@@ -234,30 +248,12 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, 
 
   # Wait for all processes to complete
   for subprocess in subprocesses:
-    #subprocess.join()
     while True:
-      response_times = {
-                          'Average': average_list(durations, 1000000),
-                          'Min': min_max_list(durations, 1000000)[0],
-                          'Max': min_max_list(durations, 1000000)[1]
-                        }
-      print "DEBUG ::: YIELDING"
-      print "R", results._getvalue()
-      print "S", status._getvalue()
-      print "RT", response_times
-      print "S", success._getvalue()
+      response_times = calculated_response_times(durations)
+
       yield results._getvalue(), status._getvalue(), response_times, success._getvalue()
+      
       time.sleep(1)
       if not subprocess.is_alive():
         break
   
-  print "DEBUG ::: DONE"
-  #response_times = {
-  #                    'Average': average_list(durations, 1000000),
-  #                    'Min': min_max_list(durations, 1000000)[0],
-  #                    'Max': min_max_list(durations, 1000000)[1]
-  #                  }
-
-  # TODO: return playlist details # is_i_frames_only, is_variant, is_independent_segments, iframe_playlists, is_endlist, media_sequence, targetduration
-  #### return results, status, response_times, success
-
