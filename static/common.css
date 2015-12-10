@@ -1,0 +1,27 @@
+/* Sections */
+.section_header{
+  text-align:center;
+  margin-top:20px;
+}
+
+/* Setup Section */
+.setup_title{
+  margin-bottom:20px;
+  text-align:center;
+}
+.setup_heading{
+  margin-bottom:-10px;
+  text-align:center;
+  margin-top:35px;
+}
+.setup_heading:hover{
+  color:red;
+}
+.setup_button{
+  width:150px;
+}
+
+/* Report Section */
+.statistic{
+  margin-left:20px;
+}
