@@ -250,10 +250,10 @@ def get_hls_stream(m3u8_url, concurrency=1, live=True, loop=1, segment_sleep=1, 
   for subprocess in subprocesses:
     while True:
       response_times = calculated_response_times(durations)
-
       yield results._getvalue(), status._getvalue(), response_times, success._getvalue()
       
       time.sleep(1)
       if not subprocess.is_alive():
+        yield results._getvalue(), status._getvalue(), response_times, success._getvalue()
         break
   

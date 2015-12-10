@@ -3,6 +3,8 @@
   <head>
     <title>HLS Load Test</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='common.js') }}"></script>
   </head>
 
@@ -13,8 +15,7 @@
       <div id="parameters" style="margin-top:20px">
         <form id="params_form" method="post" action="{{ url_for('start') }}" class="form-horizontal well" role="form">
 
-          <h4 style="margin-bottom: -10px; text-align:center;">Stream Parameters</h4>
-          <hr>
+          <h4 class="setup_title">Stream Parameters</h4>
 
           <div class="form-group">
             <div class="col-lg12 col-md-12 col-sm-12 col-xs-12">
@@ -60,7 +61,7 @@
 
           
           <!-- Timeouts -->
-          <h4 id="timeout_header" style="margin-bottom: -10px; text-align:center; margin-top:35px" onclick="toggle_timeout_view()">Timeouts</h4>
+          <h4 id="timeout_header" class="setup_heading" onclick="toggle_timeout_view()">Timeouts</h4>
           <hr>
           <div id="timeout_fields">
             <div class="form-group">
@@ -82,7 +83,7 @@
 
           
           <!-- AUTHENTICATION -->
-          <h4 id="auth_header" style="margin-bottom: -10px; text-align:center; margin-top:35px" onclick="toggle_auth_view()">Authentication</h4>
+          <h4 id="auth_header" class="setup_heading" onclick="toggle_auth_view()">Authentication</h4>
           <hr>
           <div id="auth_fields">
             <div class="form-group">
@@ -125,7 +126,7 @@
             <button class="btn btn-primary" onclick="clear_form('params_form'); return false;" style="width:200px; margin-right:30px; margin-left:30px">
               Clear
             </button>
-            <button class="btn btn-primary" type="button" onclick="send_form(); return false"; style="width:200px; margin-right:30px; margin-left:30px">
+            <button id="submit_button" class="btn btn-primary" type="button" onclick="send_form(); return false"; style="width:200px; margin-right:30px; margin-left:30px">
               Start
             </button>
           </div>
@@ -135,7 +136,7 @@
 
       <div id="results_and_metrics" {% if test_stats != 'True' %}style="display:none"{% endif %}>
         <!-- STATISTICS -->
-        <h4> Statistics </h4>
+        <h4 class="section_header"> Statistics </h4>
         <hr>
         <div id="test_complete" style="width:100%; text-align:center; color:green; font-weight:800; font-size:20px"></div>
         <div id="statistics" style="margin-left:20px">
@@ -167,7 +168,7 @@
         </div>
 
         <!-- VIEWER -->
-        <h4> Viewer </h4>
+        <h4 class="section_header"> Viewer </h4>
         <hr>
         <div id="viewer" style="text-align:center">
           <video width="352" height="198" controls>

@@ -44,7 +44,7 @@ def authentication_url(auth_url, auth_username, auth_password, auth_type):
 def set_value(value, default):
   # Return given value, or if not set, return the default
   if value:
-    return value
+    return value.strip()
   else:
     return default
 
@@ -53,7 +53,7 @@ def build_request_body(request):
   global request_body
 
   # Stream Parameters
-  request_body['url'] = request.json['url']
+  request_body['url'] = request.json['url'].strip()
   request_body['sleep'] = set_value(request.json['request_sleep'], 2)
   request_body['concurrency'] = set_value(request.json['concurrency'], 1)
   request_body['live'] = set_value(request.json['live'], False)
@@ -65,10 +65,10 @@ def build_request_body(request):
   request_body['timeouts'] = {'read': read_timeout, 'connect': connect_timeout}
   
   # Authentication Parameters
-  auth_url = request.json['auth_url']
-  auth_username = request.json['auth_username']
-  auth_password = request.json['auth_password']
-  auth_type = request.json['auth_type']
+  auth_url = request.json['auth_url'].strip()
+  auth_username = request.json['auth_username'].strip()
+  auth_password = request.json['auth_password'].strip()
+  auth_type = request.json['auth_type'].strip()
 
   # Authentication Payload
   request_body['authentication'] = authentication_url(auth_url, auth_username, auth_password, auth_type)

@@ -1,37 +1,37 @@
 function set_live(setting){
   if (setting.value === "True"){
-    document.getElementById('loop').required = true;  
-    document.getElementById('loop').placeholder = "Number of segments to get";
-    document.getElementById('loop-label').innerHTML = 'Segments <span style="color:red">*</span>'; 
+    $('#loop').attr('required', true);  
+    $('#loop').attr('placeholder', 'Number of segments to get');
+    $('#loop-label').html('Segments <span style="color:red">*</span>'); 
   } else {
-    document.getElementById('loop').required = true;
-    document.getElementById('loop').placeholder = "Times to loop playlist";
-    document.getElementById('loop-label').innerHTML = 'Loop Playlist <span style="color:red">*</span>';
+    $('#loop').attr('required', true);
+    $('#loop').attr('placeholder', 'Times to loop playlist');
+    $('#loop-label').html('Loop Playlist <span style="color:red">*</span>');
   }
 }
 
 function clear_form(form_name){
-  document.getElementById(form_name).reset();
+  $('#' + form_name).trigger('reset');
 }
 
 function assemble_payload(){
   var payload = {}
   /* Primary Parameters */
-  payload.url = document.getElementById('url').value;
-  payload.request_sleep = document.getElementById('request_sleep').value;
-  payload.concurrency = document.getElementById('concurrency').value;
-  payload.live = document.getElementById('live').value;
-  payload.loop = document.getElementById('loop').value;
+  payload.url = $('#url').val();
+  payload.request_sleep = $('#request_sleep').val();
+  payload.concurrency = $('#concurrency').val();
+  payload.live = $('#live').val();
+  payload.loop = $('#loop').val();
 
   /* Timeouts */
-  payload.read_timeout = document.getElementById('read_timeout').value;
-  payload.connect_timeout = document.getElementById('connect_timeout').value;
+  payload.read_timeout = $('#read_timeout').val();
+  payload.connect_timeout = $('#connect_timeout').val();
 
   /* Authentication Paramaters */
-  payload.auth_url = document.getElementById('auth_url').value;
-  payload.auth_username = document.getElementById('auth_username').value;
-  payload.auth_password = document.getElementById('auth_password').value;
-  payload.auth_type = document.getElementById('auth_type').value;
+  payload.auth_url = $('#auth_url').val();
+  payload.auth_username = $('#auth_username').val();
+  payload.auth_password = $('#auth_password').val();
+  payload.auth_type = $('#auth_type').val();
 
   return payload;
 }
@@ -47,7 +47,7 @@ function send_form(){
     if (client.readyState == 4 && client.status == 200) {
 
       es = new EventSource('/start/');
-      document.getElementById('results_and_metrics').style.display = '';
+      $('#results_and_metrics').show();
       
       es.onmessage = function(e) {  
         // Responses
@@ -71,6 +71,7 @@ function send_form(){
         var status_code_keys = Object.keys(status_codes);
         for (var i=0; i < status_code_keys.length; i++){
           var row_data = document.createElement('div');
+          row_data.className = 'statistic';
           row_data.innerHTML = '<b>' + status_code_keys[i] + ' : </b>' + status_codes[status_code_keys[i]];
           return_code_container.appendChild(row_data);
         }
@@ -83,7 +84,7 @@ function send_form(){
         var response_type_keys = Object.keys(results);
         for (var i=0; i < response_type_keys.length; i++){
           var row_data = document.createElement('div');
-          row_data.style.marginLeft = ':20px';
+          row_data.className = 'statistic';
           row_data.innerHTML = '<b>' + response_type_keys[i] + ' : </b>' + results[response_type_keys[i]];
           response_type_container.appendChild(row_data);
         }
@@ -96,6 +97,7 @@ function send_form(){
         var response_times_keys = Object.keys(response_times);
         for (var i=0; i < response_times_keys.length; i++){
           var row_data = document.createElement('div');
+          row_data.className = 'statistic';
           row_data.innerHTML = '<b>' + response_times_keys[i] + ' : </b>' + response_times[response_times_keys[i]] + ' seconds';
           response_times_container.appendChild(row_data);
         }
@@ -108,12 +110,13 @@ function send_form(){
         var playlist_success_keys = Object.keys(success);
         for (var i=0; i < playlist_success_keys.length; i++){
           var row_data = document.createElement('div');
+          row_data.className = 'statistic';
           row_data.innerHTML = '<b>' + playlist_success_keys[i] + ' : </b>' + success[playlist_success_keys[i]];
           playlist_status_container.appendChild(row_data);
         }
 
         // Text File Location
-        document.getElementById('text_location').innerHTML = response.test_location;
+        $('#text_location').html(response.test_location);
       }
       
       es.onerror = function(e) {
@@ -121,13 +124,15 @@ function send_form(){
         switch( e.target.readyState ){
           case EventSource.CONNECTING: // Stream Closed
             es.close();
-            document.getElementById('test_complete').innerHTML = 'Test Complete';
-            document.getElementById('test_complete').style.color = 'green';
+            $('#test_complete').html('Test Complete');
+            $('#test_complete').css('color', 'green');
+            $('#submit_button').show();
             return;
           case EventSource.CLOSED:
             console.log("Event source closed");
-            document.getElementById('test_complete').innerHTML = 'Test Complete';
-            document.getElementById('test_complete').style.color = 'green';
+            $('#test_complete').html('Test Complete');
+            $('#test_complete').css('color', 'green');
+            $('#submit_button').show();
             return;
         }
       }
@@ -143,8 +148,9 @@ function send_form(){
     }
   }
 
-  document.getElementById('test_complete').innerHTML = 'Test Running';
-  document.getElementById('test_complete').style.color = 'red';
+  $('#test_complete').html('Test Running');
+  $('#test_complete').css('color', 'red');
+  $('#submit_button').hide();
 
   client.open('POST', url, true);
   client.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -154,34 +160,29 @@ function send_form(){
 
 function toggle_timeout_view(){
   // Minimize or Maximize Timeout Fields
-  var timeout_fields = document.getElementById('timeout_fields');
-  var timeout_header = document.getElementById('timeout_header');
-  if (timeout_fields.style.display === 'none') {
-    timeout_fields.style.display = '';
-    timeout_header.innerHTML = '[&mdash;] Timeouts';
+  if ($('#timeout_fields').is(':hidden')) {
+    $('#timeout_fields').show();
+    $('#timeout_header').html('[&mdash;] Timeouts');
   } else {
-    timeout_fields.style.display = 'none';
-    timeout_header.innerHTML = '[+] Timeouts';
+    $('#timeout_fields').hide();
+    $('#timeout_header').html('[+] Timeouts');
   }
 }
 
 function toggle_auth_view(){
   // Minimize or Maximize Authentication Fields
-  var auth_fields = document.getElementById('auth_fields');
-  var auth_header = document.getElementById('auth_header');
-
-  if (auth_fields.style.display === 'none') {
-    auth_fields.style.display = '';
-    auth_header.innerHTML = '[&mdash;] Authentication';
+  if ($('#auth_fields').is(':hidden')) {
+    $('#auth_fields').show();
+    $('#auth_header').html('[&mdash;] Authentication');
   } else {
-    auth_fields.style.display = 'none';
-    auth_header.innerHTML = '[+] Authentication';
+    $('#auth_fields').hide();
+    $('#auth_header').html('[+] Authentication');
   }
 }
 
 // On Load
 window.onload = function() {
-  set_live(document.getElementById('live'));
+  set_live($('#live'));
   toggle_timeout_view();
   toggle_auth_view();
 }
